@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.12">
+  <POU Name="FB_Machine" Id="{c0f33541-2076-46c4-b6c1-6cda993f2079}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PUBLIC FB_Machine
+VAR_INPUT
+	bButton				:	BOOL;
+	bInsertCoin			:	BOOL;
+	bTakeProduct		:	BOOL;
+	bTakeCoin			:	BOOL;
+END_VAR
+VAR_OUTPUT
+	eState 				:	E_States;
+	nProducts			:	UINT;
+END_VAR
+VAR	
+	rtrigButton			:	R_TRIG;
+	rtrigInsertCoin		:	R_TRIG;
+	rtrigTakeProduct	:	R_TRIG;
+	rtrigTakeCoin		:	R_TRIG;	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[rtrigButton(CLK := bButton);
+rtrigInsertCoin(CLK := bInsertCoin);
+rtrigTakeProduct(CLK := bTakeProduct);
+rtrigTakeCoin(CLK := bTakeCoin);
+
+IF (rtrigButton.Q) THEN
+	THIS^.PressButton();
+END_IF
+
+IF (rtrigInsertCoin.Q) THEN
+	THIS^.InsertCoin();
+END_IF
+
+IF (rtrigTakeProduct.Q) THEN
+	THIS^.CustomerTakesProduct();
+END_IF
+
+IF (rtrigTakeCoin.Q) THEN
+	THIS^.CustomerTakesCoin();
+END_IF
+
+]]></ST>
+    </Implementation>
+    <Method Name="CustomerTakesCoin" Id="{89905c24-f64a-47f7-9831-f13322442984}">
+      <Declaration><![CDATA[METHOD INTERNAL CustomerTakesCoin : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (THIS^.eState = E_States.eCoinEjected) THEN
+	ADSLOGSTR(ADSLOG_MSGTYPE_HINT, 'Customer has taken the coin.', '');
+	eState := E_States.eWaiting;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CustomerTakesProduct" Id="{864cf179-504e-41f8-bee7-1db8496a9131}">
+      <Declaration><![CDATA[METHOD INTERNAL CustomerTakesProduct : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (THIS^.eState = E_States.eProductEjected) THEN
+	ADSLOGSTR(ADSLOG_MSGTYPE_HINT, 'Customer has taken the product.', '');
+	eState := E_States.eWaiting;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{206fd956-e051-41c8-9621-20937bbc1327}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+	nProducts :	UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.nProducts := nProducts;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="InsertCoin" Id="{90193e61-c93d-4256-8346-8e010f353619}">
+      <Declaration><![CDATA[METHOD INTERNAL InsertCoin : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (THIS^.eState = E_States.eWaiting) THEN
+	ADSLOGSTR(ADSLOG_MSGTYPE_HINT, 'Customer has insert a coin.', '');
+	THIS^.eState := E_States.eHasCoin;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PressButton" Id="{4dad7645-4644-44fe-b6c3-addd1e666600}">
+      <Declaration><![CDATA[METHOD INTERNAL PressButton : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (THIS^.eState = E_States.eHasCoin) THEN
+	IF (THIS^.nProducts > 0) THEN
+		THIS^.nProducts := THIS^.nProducts - 1;
+		ADSLOGSTR(ADSLOG_MSGTYPE_HINT, 'Customer has pressed the button. Output product.', '');
+		THIS^.eState := E_States.eProductEjected;
+	ELSE				
+		ADSLOGSTR(ADSLOG_MSGTYPE_HINT, 'Customer has pressed the button. No more products. Return coin.', '');
+		THIS^.eState := E_States.eCoinEjected;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Machine">
+      <LineId Id="88" Count="3" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="72" Count="14" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="43" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Machine.CustomerTakesCoin">
+      <LineId Id="6" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Machine.CustomerTakesProduct">
+      <LineId Id="6" Count="0" />
+      <LineId Id="20" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="22" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Machine.FB_init">
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Machine.InsertCoin">
+      <LineId Id="6" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Machine.PressButton">
+      <LineId Id="6" Count="0" />
+      <LineId Id="15" Count="1" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="18" Count="4" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
